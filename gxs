@@ -248,5 +248,4 @@ main() {
     esac
 }
 
-# main "$@"
-do_attach
+main "$@"
