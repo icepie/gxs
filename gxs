@@ -13,9 +13,11 @@ XORG_DRIVER=$(awk '/Driver/{gsub("\"",""); print $2}' <$EGPU_TEMPLATE)
 
 bus_id_hex2dec() {
     hex_id=$1
-    segs=()
-    while IFS='' read -r line; do segs+=("$line"); done < <(echo "$hex_id" | tr ':|\.' ' ')
-    dec_id=$(printf ':0x%d' "${segs[@]}")
+    # segs=()
+    # while IFS='' read -r line; do segs+=("$line"); done < <(echo "$hex_id" | tr ':|\.' ' ')
+    segs=($(echo $hex_id | tr ':|\.' ' '))
+    # dec_id=$(printf ':0x%d' "${segs[@]}")
+    dec_id=$(printf ':%d' "0x${segs[@]}")
     echo "${dec_id:1}"
 }
 
@@ -59,6 +61,25 @@ answer() {
         exit 1
         ;;
     esac
+}
+
+do_attach() {
+
+    while true; do
+        sleep 2
+        echo "detecting egpu plug status..."
+        if [[ -n $(detect_egpu_pluged) ]]; then
+            gpu='egpu'
+            if [[ $XORG_DRIVER == nvidia ]]; then
+                install_property_nvidia_driver
+            fi
+            break
+        fi
+    done
+
+    echo "Ready to switch egpu!"
+    switch_gpu 'egpu' <<<'Yes'
+
 }
 
 do_detach() {
@@ -148,10 +169,9 @@ do_boot() {
         fi
     done
     if [[ $gpu == egpu ]]; then
-        switch_gpu 'egpu' <<<'No'
+        switch_gpu 'egpu' <<<'Yes'
     else
-
-        switch_gpu 'igpu' <<<'No'
+        switch_gpu 'igpu' <<<'Yes'
     fi
 }
 
@@ -181,6 +201,7 @@ show_help() {
     echo 'Usage: gxs [cmd].'
     echo 'egpu,e        Switch external GPU.'
     echo 'igpu,i        Switch internal GPU.'
+    echo 'attach,a      Attach external GPU.'
     echo 'detach,d      Detach GPU enclosed.'
 }
 
@@ -199,6 +220,12 @@ main() {
             detect_count=1
         fi
         do_boot $detect_count
+        ;;
+    attach | a)
+        echo 'Are you ready to attach the thunderbolt cable? (y/n)'
+        if [[ $(answer) == true ]]; then
+            do_attach
+        fi
         ;;
     detach | d)
         echo 'Are you ready to detach the thunderbolt cable? (y/n)'
@@ -221,4 +248,5 @@ main() {
     esac
 }
 
-main "$@"
+# main "$@"
+do_attach

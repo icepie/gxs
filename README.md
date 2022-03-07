@@ -56,6 +56,10 @@ Run `sudo gxs i` or `sudo gxs i <<<'y'` without prompt to do reload.
 
 Run `sudo gxs e` or `sudo gxs e <<<'y'` without prompt to do reload.
 
+### Attach GPU enclosure
+
+Run `sudo gxs a` or `sudo gxs a <<<'y'` without prompt to do reload.
+
 ### Detach GPU enclosure
 
 Run `sudo gxs d` or `sudo gxs d <<<'y'` without prompt to do reload.
