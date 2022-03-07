@@ -6,6 +6,7 @@ Section "Device"
     Identifier  "eGPU"
     Driver      "@Driver@"
     BusID       "PCI:@BusID@"
+    Option      "Coolbits" 24
     Option      "AllowExternalGpus" "True"
     Option      "AllowEmptyInitialConfiguration"
 EndSection
