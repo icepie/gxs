@@ -13,16 +13,17 @@ XORG_DRIVER=$(awk '/Driver/{gsub("\"",""); print $2}' <$EGPU_TEMPLATE)
 
 bus_id_hex2dec() {
     hex_id=$1
-    segs=($(echo $hex_id | tr ':|\.' ' '))
-    dec_id=$(printf ':%d' "0x${segs[@]}")
-    echo ${dec_id:1}
+    segs=()
+    while IFS='' read -r line; do segs+=("$line"); done < <(echo "$hex_id" | tr ':|\.' ' ')
+    dec_id=$(printf ':0x%d' "${segs[@]}")
+    echo "${dec_id:1}"
 }
 
 detect_egpu_pluged() {
     # lscpi may out error at boot stage.
     lspci 2>/dev/null | awk '/VGA/{print $1}' | {
         while read -r hex_id; do
-            dec_id=$(bus_id_hex2dec $hex_id)
+            dec_id=$(bus_id_hex2dec "$hex_id")
             if [[ $dec_id == "$EGPU_BUS_ID" ]]; then
                 echo 'true'
             fi
@@ -69,12 +70,12 @@ do_detach() {
         done
         systemctl stop display-manager.service
 
-        segs_g=("$(echo ${EGPU_BUS_ID%.*} | tr ':' ' ')")
+        segs_g=("$(echo "${EGPU_BUS_ID%.*}" | tr ':' ' ')")
 
-        hex_id_g="$(printf %02x ${segs_g[0]}):$(printf %02x ${segs_g[1]})"
+        hex_id_g="$(printf %02x "${segs_g[0]}"):$(printf %02x "${segs_g[1]}")"
         if [[ -n $hex_id_g ]]; then
             for bus_remove_path in /sys/bus/pci/devices/0000:"$hex_id_g".*/remove; do
-                echo 1 >$bus_remove_path
+                echo 1 >"$bus_remove_path"
             done
         fi
 
@@ -124,7 +125,7 @@ switch_gpu() {
         echo "You are now set up $gpu. Would you like to reload? (y/n)"
     fi
     if [[ $(answer) == true ]]; then
-        do_reload $gpu
+        do_reload "$gpu"
     else
         exit 0
     fi
@@ -156,12 +157,12 @@ do_boot() {
 
 do_setup() {
     card_info=$1
-    hex_id=$(grep -E -o '[a-z0-9]+:[a-z0-9]+\.[a-z0-9]' <<<$card_info)
+    hex_id=$(grep -E -o '[a-z0-9]+:[a-z0-9]+\.[a-z0-9]' <<<"$card_info")
     if [[ -z $hex_id ]]; then
         echo 'Fail to parse the BusID, please check out the input number.'
         exit 1
     fi
-    dec_id=$(bus_id_hex2dec $hex_id)
+    dec_id=$(bus_id_hex2dec "$hex_id")
     if [[ $card_info =~ NVIDIA ]]; then
         driver='nvidia'
     elif [[ $card_info =~ AMD ]]; then
@@ -211,7 +212,7 @@ main() {
         echo 'Which card is your external GPU?'
         echo 'Please select highlight number inside bracket.'
         read -r card_num
-        do_setup "$(echo "$card" | sed -n ${card_num}p)"
+        do_setup "$(echo "$card" | sed -n "${card_num}"p)"
         ;;
     *)
         show_help
